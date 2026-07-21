@@ -17,11 +17,13 @@ services:
       - key: GOOGLE_PLACES_API_KEY
         sync: false
       - key: PLACES_DATA_STORAGE_ALLOWED
-        value: "false"
+        value: "true"
       - key: PLACES_DATA_TTL_DAYS
         value: "30"
       - key: AI_BASE_URL
         value: https://api.openai.com/v1
+      - key: AI_API_KEY
+        sync: false
       - key: AI_MODEL
         value: gpt-5-mini
       - key: DAILY_REQUEST_LIMIT

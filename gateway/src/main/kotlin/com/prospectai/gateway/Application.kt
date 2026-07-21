@@ -35,6 +35,7 @@ fun main() {
 }
 
 fun Application.prospectAiGateway(config: GatewayConfig = GatewayConfig.fromEnvironment()) {
+    val gatewayLog = environment.log
     val jsonCodec = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -42,10 +43,21 @@ fun Application.prospectAiGateway(config: GatewayConfig = GatewayConfig.fromEnvi
     }
     val usage = UsageRegistry(config.dailyRequestLimit, config.usageLogPath, config.monthlyRequestLimit)
     val places = GooglePlacesProvider(config, jsonCodec, usage)
-    val integrations = IntegrationManager(listOf(places), config.searchCacheTtlMinutes, config.providerMaxAttempts)
+    val searchProviders = buildList<CompanySearchProvider> {
+        if (places.isConfigured()) add(places)
+    }
+    val integrations = IntegrationManager(searchProviders, config.searchCacheTtlMinutes, config.providerMaxAttempts)
     val websiteAuditor = WebsiteAuditor(config, usage)
     val ai = AiProvider(config, jsonCodec, usage)
-    val gatewayLog = environment.log
+
+    gatewayLog.info(
+        "Gateway providers initialized: searchProviders={}, googlePlacesKeyLoaded={}, " +
+            "placesDataStorageAllowed={}, aiKeyLoaded={}",
+        searchProviders.joinToString { provider -> provider.id }.ifEmpty { "<none>" },
+        !config.googlePlacesApiKey.isNullOrBlank(),
+        config.placesDataStorageAllowed,
+        !config.aiApiKey.isNullOrBlank(),
+    )
 
     install(ContentNegotiation) { json(jsonCodec) }
     install(CallLogging) {

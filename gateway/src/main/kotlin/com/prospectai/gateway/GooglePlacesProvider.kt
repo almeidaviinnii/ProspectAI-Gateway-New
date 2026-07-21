@@ -34,12 +34,17 @@ class GooglePlacesProvider(
         .readTimeout(20, TimeUnit.SECONDS)
         .build()
 
-    override fun isConfigured(): Boolean =
-        !config.googlePlacesApiKey.isNullOrBlank() && config.placesDataStorageAllowed
+    override fun isConfigured(): Boolean = !config.googlePlacesApiKey.isNullOrBlank()
 
     override fun search(request: GatewaySearchRequest): GatewaySearchResponse {
         val key = config.googlePlacesApiKey
             ?: throw GatewayException("A integração Google Places não está configurada.", HttpStatusCode.ServiceUnavailable)
+        if (!config.placesDataStorageAllowed) {
+            throw GatewayException(
+                "Google Places está configurado, mas PLACES_DATA_STORAGE_ALLOWED não está habilitado.",
+                HttpStatusCode.ServiceUnavailable,
+            )
+        }
         usage.record("google_places")
 
         val query = buildList {
