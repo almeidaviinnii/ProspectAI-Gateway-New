@@ -48,16 +48,29 @@ fun Application.prospectAiGateway(config: GatewayConfig = GatewayConfig.fromEnvi
     }
     val integrations = IntegrationManager(searchProviders, config.searchCacheTtlMinutes, config.providerMaxAttempts)
     val websiteAuditor = WebsiteAuditor(config, usage)
-    val ai = AiProvider(config, jsonCodec, usage)
+    val ai = AIProviderFactory.create(config, jsonCodec, usage)
 
     gatewayLog.info(
         "Gateway providers initialized: searchProviders={}, googlePlacesKeyLoaded={}, " +
-            "placesDataStorageAllowed={}, aiKeyLoaded={}",
+            "placesDataStorageAllowed={}, aiProvider={}, aiProviderConfigured={}",
         searchProviders.joinToString { provider -> provider.id }.ifEmpty { "<none>" },
         !config.googlePlacesApiKey.isNullOrBlank(),
         config.placesDataStorageAllowed,
-        !config.aiApiKey.isNullOrBlank(),
+        ai.id,
+        ai.isConfigured,
     )
+    if (!ai.isConfigured) {
+        val requiredVariable = when (ai.id) {
+            "gemini" -> "GEMINI_API_KEY"
+            "openai" -> "AI_API_KEY (ou OPENAI_API_KEY)"
+            else -> "AI_PROVIDER válido"
+        }
+        gatewayLog.error(
+            "AI provider configuration error: selectedProvider={}, missingOrInvalidConfiguration={}",
+            ai.id,
+            requiredVariable,
+        )
+    }
 
     install(ContentNegotiation) { json(jsonCodec) }
     install(CallLogging) {
@@ -83,7 +96,8 @@ fun Application.prospectAiGateway(config: GatewayConfig = GatewayConfig.fromEnvi
                         version = "1.0.0",
                         providers = mapOf(
                             "google_places" to (!config.googlePlacesApiKey.isNullOrBlank() && config.placesDataStorageAllowed),
-                            "ai" to !config.aiApiKey.isNullOrBlank(),
+                            "ai" to ai.isConfigured,
+                            "ai_${ai.id}" to ai.isConfigured,
                             "website_audit" to true,
                         ),
                     ),
@@ -142,9 +156,22 @@ fun Application.prospectAiGateway(config: GatewayConfig = GatewayConfig.fromEnvi
             }
 
             post("/analyze") {
-                call.requireGatewayAuthorization(config)
-                val request = call.receive<AiAnalysisRequest>()
-                call.respond(withContext(Dispatchers.IO) { ai.analyze(request) })
+                try {
+                    call.requireGatewayAuthorization(config)
+                    val request = call.receive<AiAnalysisRequest>()
+                    call.respond(withContext(Dispatchers.IO) { ai.analyze(request) })
+                } catch (error: GatewayException) {
+                    if (error.status == HttpStatusCode.ServiceUnavailable) {
+                        gatewayLog.error(
+                            "POST /v1/analyze unavailable: selectedProvider={}, configured={}, reason={}",
+                            ai.id,
+                            ai.isConfigured,
+                            error.message,
+                            error,
+                        )
+                    }
+                    throw error
+                }
             }
         }
     }

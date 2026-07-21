@@ -2,6 +2,15 @@
 
 O Gateway protege credenciais e intermedeia Google Places, auditoria de websites e IA.
 
+## Provedores de IA
+
+O endpoint e o payload de `POST /v1/analyze` permanecem únicos. Internamente, o Gateway seleciona um adaptador pela variável `AI_PROVIDER`:
+
+- `gemini` (padrão): usa `GEMINI_API_KEY` e `GEMINI_MODEL`;
+- `openai`: usa `AI_API_KEY` (com `OPENAI_API_KEY` como alias legado), `AI_BASE_URL` e `AI_MODEL`.
+
+O modelo padrão do Gemini é `gemini-3.5-flash-lite`, escolhido para baixa latência e custo. Um provider desconhecido ou uma chave ausente não altera o contrato da API: `/v1/analyze` retorna HTTP 503 com uma mensagem explícita, e a inicialização registra o provider selecionado e seu estado sem expor a chave.
+
 ## Provisionamento
 
 1. Gere um token longo e aleatório para `PROSPECTAI_GATEWAY_TOKEN`.
@@ -20,7 +29,7 @@ O Gateway protege credenciais e intermedeia Google Places, auditoria de websites
 ## Limitações registradas
 
 - O Google Business Profile não é utilizado para geração de leads.
-- Uma chave Google válida não ativa o adaptador sozinha; a autorização explícita de armazenamento também é obrigatória.
+- O adaptador Google Places é registrado quando sua chave existe; a autorização explícita de armazenamento continua sendo verificada antes de persistir ou pesquisar dados.
 - A pesquisa por raio usa Geocoding para resolver o centro; se não houver coordenada confiável, a pesquisa textual continua e registra aviso explícito.
 - A auditoria de website não executa JavaScript e limita a leitura a 1 MB.
 - Redes sociais são identificadas somente quando publicamente vinculadas no website ou retornadas por provedor autorizado.
