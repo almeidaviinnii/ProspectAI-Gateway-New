@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: prospectai-gateway
+    runtime: docker
+    plan: starter
+    region: virginia
+    dockerfilePath: ./gateway/Dockerfile
+    dockerContext: .
+    healthCheckPath: /v1/health
+    autoDeployTrigger: "off"
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PROSPECTAI_GATEWAY_TOKEN
+        sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
+      - key: PLACES_DATA_STORAGE_ALLOWED
+        value: "false"
+      - key: PLACES_DATA_TTL_DAYS
+        value: "30"
+      - key: AI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: AI_MODEL
+        value: gpt-5-mini
+      - key: DAILY_REQUEST_LIMIT
+        value: "2000"
+      - key: MONTHLY_REQUEST_LIMIT
+        value: "50000"
+      - key: SEARCH_CACHE_TTL_MINUTES
+        value: "10"
+      - key: PROVIDER_MAX_ATTEMPTS
+        value: "2"
+      - key: WEBSITE_TIMEOUT_SECONDS
+        value: "10"
+      - key: USAGE_LOG_PATH
+        value: /app/data/usage.csv
+      - key: LATEST_APK_MANDATORY
+        value: "false"
+    disk:
+      name: prospectai-usage
+      mountPath: /app/data
+      sizeGB: 5
