@@ -16,6 +16,15 @@ object AIProviderFactory {
     }
 }
 
+object AnalysisProviderFactory {
+    fun create(config: GatewayConfig, json: Json, usage: UsageRegistry): AnalysisProvider =
+        if (config.aiModuleEnabled) {
+            AIProviderFactory.create(config, json, usage)
+        } else {
+            RuleEngineProvider()
+        }
+}
+
 internal fun providerNotConfigured(provider: String, requiredVariable: String) = GatewayException(
     "Provedor de IA '$provider' selecionado, mas não configurado. Defina $requiredVariable.",
     HttpStatusCode.ServiceUnavailable,

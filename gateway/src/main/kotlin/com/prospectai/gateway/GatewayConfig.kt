@@ -24,10 +24,11 @@ data class GatewayConfig(
     val latestApkUrl: String? = null,
     val latestApkSha256: String? = null,
     val latestApkMandatory: Boolean = false,
-    val aiProvider: String = "gemini",
+    val aiProvider: String = "openai",
     val geminiApiKey: String? = null,
     val geminiBaseUrl: String = "https://generativelanguage.googleapis.com/v1beta",
     val geminiModel: String = "gemini-3.5-flash-lite",
+    val aiModuleEnabled: Boolean = false,
 ) {
     companion object {
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): GatewayConfig = GatewayConfig(
@@ -51,10 +52,19 @@ data class GatewayConfig(
             latestApkUrl = environment["LATEST_APK_URL"],
             latestApkSha256 = environment["LATEST_APK_SHA256"],
             latestApkMandatory = environment["LATEST_APK_MANDATORY"]?.toBooleanStrictOrNull() ?: false,
-            aiProvider = environment["AI_PROVIDER"]?.trim()?.lowercase()?.takeIf(String::isNotEmpty) ?: "gemini",
+            aiProvider = environment["AI_PROVIDER"]?.trim()?.lowercase()?.takeIf(String::isNotEmpty)
+                ?: if (!(environment["AI_API_KEY"] ?: environment["OPENAI_API_KEY"]).isNullOrBlank()) "openai"
+                else if (!environment["GEMINI_API_KEY"].isNullOrBlank()) "gemini"
+                else "openai",
             geminiApiKey = environment["GEMINI_API_KEY"],
             geminiBaseUrl = (environment["GEMINI_BASE_URL"] ?: "https://generativelanguage.googleapis.com/v1beta").trimEnd('/'),
             geminiModel = environment["GEMINI_MODEL"]?.trim()?.takeIf(String::isNotEmpty) ?: "gemini-3.5-flash-lite",
+            aiModuleEnabled = environment["AI_MODULE_ENABLED"]?.toBooleanStrictOrNull()
+                ?: listOf(
+                    environment["AI_API_KEY"],
+                    environment["OPENAI_API_KEY"],
+                    environment["GEMINI_API_KEY"],
+                ).any { !it.isNullOrBlank() },
         )
     }
 }

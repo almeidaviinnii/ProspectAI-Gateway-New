@@ -9,7 +9,7 @@ O projeto inclui um Blueprint `render.yaml` para um Web Service Docker no Render
 1. Repositório Git privado conectado ao Render.
 2. Chave do Google Maps Platform autorizada somente para Places API (New) e Geocoding API.
 3. Confirmação contratual antes de definir `PLACES_DATA_STORAGE_ALLOWED=true`.
-4. Chave do Google AI Studio em `GEMINI_API_KEY` para o provider padrão. A OpenAI continua opcional e selecionável por variável de ambiente.
+4. A versão sem IA não exige `GEMINI_API_KEY` nem `AI_API_KEY`. O Motor de Regras é o analisador padrão.
 5. Token inicial aleatório de pelo menos 256 bits para `PROSPECTAI_GATEWAY_TOKEN`.
 
 Nunca coloque valores reais em `.env.example`, no repositório ou no APK.
@@ -18,12 +18,12 @@ Nunca coloque valores reais em `.env.example`, no repositório ou no APK.
 
 1. Envie o projeto para um repositório Git privado.
 2. No Render, crie um Blueprint apontando para o `render.yaml` da raiz.
-3. Quando solicitado, informe `PROSPECTAI_GATEWAY_TOKEN`, `GOOGLE_PLACES_API_KEY` e `GEMINI_API_KEY` no painel de segredos.
+3. Quando solicitado, informe somente `PROSPECTAI_GATEWAY_TOKEN` e `GOOGLE_PLACES_API_KEY`. Não configure chave de IA nesta versão.
 4. Confirme o serviço pago `starter` e o disco persistente montado em `/app/data`.
 5. Aguarde o deploy e copie a URL HTTPS `https://<servico>.onrender.com/`.
 6. Confirme que `GET /v1/health` retorna `status: ok`.
 7. Se houver autorização de retenção compatível com o ProspectAI, altere `PLACES_DATA_STORAGE_ALLOWED` para `true`, salve e faça deploy manual.
-8. Mantenha `AI_PROVIDER=gemini` para usar o padrão. Para usar OpenAI futuramente, defina `AI_PROVIDER=openai`, adicione `AI_API_KEY` e faça novo deploy; nenhuma alteração de código ou do Android é necessária.
+8. Não configure nenhuma chave de IA nesta versão. Sem `AI_API_KEY`, `OPENAI_API_KEY` ou `GEMINI_API_KEY`, o Motor de Regras é selecionado automaticamente e nenhuma chamada de IA ocorre.
 
 ## Validação após o deploy
 
@@ -51,12 +51,16 @@ No Android, abra `Ajustes > Integrações`, informe a URL HTTPS com barra final,
 
 ### Google Gemini
 
+Somente necessário quando o módulo opcional de IA for reativado.
+
 1. Crie uma nova chave no Google AI Studio sem revogar a atual.
 2. Troque somente `GEMINI_API_KEY` no cofre de segredos do Render.
 3. Execute deploy manual e valide uma análise.
 4. Revogue a chave antiga após confirmar o funcionamento.
 
 ### OpenAI
+
+Somente necessário quando o módulo opcional de IA for reativado.
 
 1. Crie uma nova chave sem revogar a atual.
 2. Troque `AI_API_KEY` no cofre de segredos do Render.
@@ -66,7 +70,7 @@ No Android, abra `Ajustes > Integrações`, informe a URL HTTPS com barra final,
 ### Trocar o provider sem alterar código
 
 1. Para Gemini, defina `AI_PROVIDER=gemini` e configure `GEMINI_API_KEY`.
-2. Para OpenAI, defina `AI_PROVIDER=openai` e configure `AI_API_KEY`.
+2. Para OpenAI, basta configurar `AI_API_KEY`; `AI_PROVIDER=openai` é opcional porque será selecionado automaticamente.
 3. Salve as variáveis e faça um deploy manual.
 4. Confira `/v1/health` e execute uma análise pelo aplicativo.
 

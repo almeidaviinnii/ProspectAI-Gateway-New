@@ -21,20 +21,30 @@ class GatewayConfigTest {
     }
 
     @Test
-    fun `gemini is the default AI provider and OpenAI remains selectable`() {
+    fun `AI is disabled without a key and AI API key reactivates OpenAI`() {
         val defaults = GatewayConfig.fromEnvironment(emptyMap())
         val openAI = GatewayConfig.fromEnvironment(
             mapOf(
-                "AI_PROVIDER" to "OPENAI",
                 "AI_API_KEY" to "openai-test-key",
-                "GEMINI_API_KEY" to "gemini-test-key",
             ),
         )
 
-        assertEquals("gemini", defaults.aiProvider)
-        assertEquals("gemini-3.5-flash-lite", defaults.geminiModel)
+        assertEquals("openai", defaults.aiProvider)
+        assertFalse(defaults.aiModuleEnabled)
         assertEquals("openai", openAI.aiProvider)
+        assertTrue(openAI.aiModuleEnabled)
         assertEquals("openai-test-key", openAI.aiApiKey)
-        assertEquals("gemini-test-key", openAI.geminiApiKey)
+    }
+
+    @Test
+    fun `explicit false keeps AI disabled even when a legacy key exists`() {
+        val config = GatewayConfig.fromEnvironment(
+            mapOf(
+                "AI_MODULE_ENABLED" to "false",
+                "OPENAI_API_KEY" to "legacy-key",
+            ),
+        )
+
+        assertFalse(config.aiModuleEnabled)
     }
 }
